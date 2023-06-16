@@ -18,6 +18,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Steamworks;
 using UnityEngine.UI;
+using UnityEngine.XR;
 
 namespace BeatSaverVoting.UI
 {
@@ -40,7 +41,6 @@ namespace BeatSaverVoting.UI
         }
 
         internal IBeatmapLevel lastSong;
-        private OpenVRHelper _openVRHelper;
         private Song _lastBeatSaverSong;
         private readonly string _userAgent = $"BeatSaverVoting/{Assembly.GetExecutingAssembly().GetName().Version}";
         [UIComponent("voteTitle")]
@@ -165,10 +165,11 @@ namespace BeatSaverVoting.UI
 
             yield return www.SendWebRequest();
 
-            if (www.isNetworkError || www.isHttpError)
+            if (www.result == UnityWebRequest.Result.ConnectionError || www.result == UnityWebRequest.Result.ProtocolError)
             {
                 Logging.log.Error($"Unable to connect to {Plugin.BeatsaverURL}! " +
-                                  (www.isNetworkError ? $"Network error: {www.error}" : (www.isHttpError ? $"HTTP error: {www.error}" : "Unknown error")));
+                                  (www.result == UnityWebRequest.Result.ConnectionError ? $"Network error: {www.error}" :
+                                      (www.result == UnityWebRequest.Result.ProtocolError ? $"HTTP error: {www.error}" : "Unknown error")));
             }
             else
             {
@@ -210,8 +211,9 @@ namespace BeatSaverVoting.UI
                 _lastBeatSaverSong = song;
 
                 voteText.text = GetScoreFromVotes(_lastBeatSaverSong.upVotes, _lastBeatSaverSong.downVotes);
-                if (_openVRHelper == null) _openVRHelper = Resources.FindObjectsOfTypeAll<OpenVRHelper>().First();
-                var canVote = _openVRHelper.vrPlatformSDK == VRPlatformSDK.Oculus || _openVRHelper.vrPlatformSDK == VRPlatformSDK.OpenVR ||
+
+                var canVote = XRSettings.loadedDeviceName.IndexOf("oculus", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                              XRSettings.loadedDeviceName.IndexOf("openvr", StringComparison.OrdinalIgnoreCase) >= 0 ||
                               Environment.CommandLine.ToLower().Contains("-vrmode oculus") || Environment.CommandLine.ToLower().Contains("fpfc");
 
                 UpInteractable = canVote;
@@ -269,12 +271,12 @@ namespace BeatSaverVoting.UI
             try
             {
                 var flag1 = File.Exists(Path.Combine(UnityGame.InstallPath, "Beat Saber_Data\\Plugins\\x86_64\\steam_api64.dll"));
-                if (_openVRHelper == null) _openVRHelper = Resources.FindObjectsOfTypeAll<OpenVRHelper>().First();
-                if (_openVRHelper.vrPlatformSDK == VRPlatformSDK.Oculus || !flag1)
+                if (XRSettings.loadedDeviceName.IndexOf("oculus", StringComparison.OrdinalIgnoreCase) >= 0 || !flag1)
                 {
                     StartCoroutine(VoteWithOculusID(hash, upvote, currentVoteCount, callback));
                 }
-                else if ((_openVRHelper.vrPlatformSDK == VRPlatformSDK.OpenVR || Environment.CommandLine.ToLower().Contains("-vrmode oculus") || Environment.CommandLine.ToLower().Contains("fpfc")))
+                else if (XRSettings.loadedDeviceName.IndexOf("openvr", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                          Environment.CommandLine.ToLower().Contains("-vrmode oculus") || Environment.CommandLine.ToLower().Contains("fpfc"))
                 {
                     StartCoroutine(VoteWithSteamID(hash, upvote, currentVoteCount, callback));
                 }
@@ -351,7 +353,7 @@ namespace BeatSaverVoting.UI
             voteWWW.timeout = 30;
             yield return voteWWW.SendWebRequest();
 
-            if (voteWWW.isNetworkError)
+            if (voteWWW.result == UnityWebRequest.Result.ConnectionError)
             {
                 Logging.log.Error(voteWWW.error);
                 callback?.Invoke(hash, false, false, currentVoteCount);
