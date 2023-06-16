@@ -213,7 +213,7 @@ namespace BeatSaverVoting.UI
                 voteText.text = GetScoreFromVotes(_lastBeatSaverSong.upVotes, _lastBeatSaverSong.downVotes);
 
                 var canVote = XRSettings.loadedDeviceName.IndexOf("oculus", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                              XRSettings.loadedDeviceName.IndexOf("openvr", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                              XRSettings.loadedDeviceName.IndexOf("openxr", StringComparison.OrdinalIgnoreCase) >= 0 ||
                               Environment.CommandLine.ToLower().Contains("-vrmode oculus") || Environment.CommandLine.ToLower().Contains("fpfc");
 
                 UpInteractable = canVote;
@@ -275,7 +275,7 @@ namespace BeatSaverVoting.UI
                 {
                     StartCoroutine(VoteWithOculusID(hash, upvote, currentVoteCount, callback));
                 }
-                else if (XRSettings.loadedDeviceName.IndexOf("openvr", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                else if (XRSettings.loadedDeviceName.IndexOf("openxr", StringComparison.OrdinalIgnoreCase) >= 0 ||
                           Environment.CommandLine.ToLower().Contains("-vrmode oculus") || Environment.CommandLine.ToLower().Contains("fpfc"))
                 {
                     StartCoroutine(VoteWithSteamID(hash, upvote, currentVoteCount, callback));
@@ -382,7 +382,7 @@ namespace BeatSaverVoting.UI
         {
             double totalVotes = upVotes + downVotes;
             var rawScore = upVotes / totalVotes;
-            var scoreWeighted = rawScore - (rawScore - 0.5) * Math.Pow(2.0, -Math.Log10(totalVotes + 1));
+            var scoreWeighted = rawScore - (rawScore - 0.5) * Math.Pow(2.0, -Math.Log(totalVotes / 2 + 1, 3.0));
 
             return $"{scoreWeighted:0.#%} ({totalVotes})";
         }
