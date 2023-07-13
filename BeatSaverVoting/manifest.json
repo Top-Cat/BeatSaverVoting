@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/nike4613/ModSaber-MetadataFileSchema/master/Schema.json",
   "author": "Top_Cat",
   "description": "A plugin for up/downvoting songs on BeatSaver",
-  "gameVersion": "1.27.0",
+  "gameVersion": "1.31.0",
   "id": "BeatSaverVoting",
   "name": "BeatSaverVoting",
   "dependsOn": {
@@ -11,5 +11,5 @@
     "BS Utils": "^1.11.0",
     "SongCore": "^3.7.0"
   },
-  "version": "2.4.1"
+  "version": "2.4.2"
 }

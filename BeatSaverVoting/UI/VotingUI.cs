@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using BeatSaberMarkupLanguage.Util;
 using UnityEngine.Networking;
 using BeatSaverVoting.Utilities;
 using HMUI;
@@ -154,7 +155,7 @@ namespace BeatSaverVoting.UI
 
             if (isCustomLevel)
             {
-                StartCoroutine(GetRatingForSong(lastSong));
+                voteTitle.StartCoroutine(GetRatingForSong(lastSong));
             }
         }
 
@@ -199,7 +200,7 @@ namespace BeatSaverVoting.UI
         {
             if (!(level is CustomPreviewBeatmapLevel cpblLevel)) yield break;
 
-            var cd = new CoroutineWithData(this, GetSongInfo(SongCore.Utilities.Hashing.GetCustomLevelHash(cpblLevel)));
+            var cd = new CoroutineWithData(voteTitle, GetSongInfo(SongCore.Utilities.Hashing.GetCustomLevelHash(cpblLevel)));
             yield return cd.Coroutine;
 
             try
@@ -241,12 +242,12 @@ namespace BeatSaverVoting.UI
 
         internal void VoteForSong(string hash, bool upvote, VoteCallback callback)
         {
-            StartCoroutine(VoteForSongAsync(hash, upvote, callback));
+            voteTitle.StartCoroutine(VoteForSongAsync(hash, upvote, callback));
         }
 
         private IEnumerator VoteForSongAsync(string hash, bool upvote, VoteCallback callback)
         {
-            var cd = new CoroutineWithData(this, GetSongInfo(hash));
+            var cd = new CoroutineWithData(voteTitle, GetSongInfo(hash));
             yield return cd.Coroutine;
 
             if (cd.result is Song song)
@@ -273,12 +274,12 @@ namespace BeatSaverVoting.UI
                 var flag1 = File.Exists(Path.Combine(UnityGame.InstallPath, "Beat Saber_Data\\Plugins\\x86_64\\steam_api64.dll"));
                 if (XRSettings.loadedDeviceName.IndexOf("oculus", StringComparison.OrdinalIgnoreCase) >= 0 || !flag1)
                 {
-                    StartCoroutine(VoteWithOculusID(hash, upvote, currentVoteCount, callback));
+                    voteTitle.StartCoroutine(VoteWithOculusID(hash, upvote, currentVoteCount, callback));
                 }
                 else if (XRSettings.loadedDeviceName.IndexOf("openxr", StringComparison.OrdinalIgnoreCase) >= 0 ||
                           Environment.CommandLine.ToLower().Contains("-vrmode oculus") || Environment.CommandLine.ToLower().Contains("fpfc"))
                 {
-                    StartCoroutine(VoteWithSteamID(hash, upvote, currentVoteCount, callback));
+                    voteTitle.StartCoroutine(VoteWithSteamID(hash, upvote, currentVoteCount, callback));
                 }
             }
             catch(Exception ex)
