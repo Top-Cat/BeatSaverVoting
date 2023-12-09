@@ -309,11 +309,6 @@ namespace BeatSaverVoting.UI
 
         private IEnumerator VoteWithSteamID(string hash, bool upvote, int currentVoteCount, VoteCallback callback)
         {
-            if (!SteamManager.Initialized)
-            {
-                Logging.log.Error("SteamManager is not initialized!");
-            }
-
             UpdateView("Voting...");
 
             var steamId = SteamUser.GetSteamID();
