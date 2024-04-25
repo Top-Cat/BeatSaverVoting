@@ -7,7 +7,7 @@ namespace BeatSaverVoting.HarmonyPatches
     [HarmonyPatch("SetDataFromLevelAsync", MethodType.Normal)]
     internal class LevelListTableCellSetDataFromLevel
     {
-        private static void Postfix(IPreviewBeatmapLevel level, bool isFavorite, ref UnityEngine.UI.Image ____favoritesBadgeImage)
+        private static void Postfix(BeatmapLevel level, bool isFavorite, ref UnityEngine.UI.Image ____favoritesBadgeImage)
         {
             var hash = SongCore.Collections.hashForLevelID(level.levelID).ToLower();
             var voteStatus = Plugin.CurrentVoteStatus(hash);

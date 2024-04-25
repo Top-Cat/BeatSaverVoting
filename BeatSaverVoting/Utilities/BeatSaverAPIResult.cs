@@ -38,13 +38,13 @@ namespace BeatSaverVoting.Utilities
             return compareTo.hash == hash;
         }
 
-        public Song(CustomPreviewBeatmapLevel data)
+        public Song(BeatmapLevel data)
         {
             songName = data.songName;
             songSubName = data.songSubName;
             songAuthorName = data.songAuthorName;
-            levelAuthorName = data.levelAuthorName;
-            path = data.customLevelPath;
+            levelAuthorName = "";// data.levelAuthorName; // TODO: BeatmapLevel.allMappers and allLighters combined?
+            path = "";// data.customLevelPath; // This is not used.
             hash = SongCore.Collections.hashForLevelID(data.levelID).ToLower();
         }
     }

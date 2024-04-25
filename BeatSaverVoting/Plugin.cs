@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 using BS_Utils.Utilities;
 using HarmonyLib;
 using IPA;
@@ -59,16 +60,16 @@ namespace BeatSaverVoting
         internal static Sprite downvoteIcon;
 
         [OnStart]
-        public void OnApplicationStart()
+        public async Task OnApplicationStart()
         {
             BSEvents.lateMenuSceneLoadedFresh += BSEvents_menuSceneLoadedFresh;
             BSEvents.gameSceneLoaded += BSEvents_gameSceneLoaded;
 
-            favoriteIcon = BeatSaberMarkupLanguage.Utilities.FindSpriteInAssembly("BeatSaverVoting.Icons.Favorite.png");
-            favoriteUpvoteIcon = BeatSaberMarkupLanguage.Utilities.FindSpriteInAssembly("BeatSaverVoting.Icons.FavoriteUpvote.png");
-            favoriteDownvoteIcon = BeatSaberMarkupLanguage.Utilities.FindSpriteInAssembly("BeatSaverVoting.Icons.FavoriteDownvote.png");
-            upvoteIcon = BeatSaberMarkupLanguage.Utilities.FindSpriteInAssembly("BeatSaverVoting.Icons.Upvote.png");
-            downvoteIcon = BeatSaberMarkupLanguage.Utilities.FindSpriteInAssembly("BeatSaverVoting.Icons.Downvote.png");
+            favoriteIcon = await BeatSaberMarkupLanguage.Utilities.LoadSpriteFromAssemblyAsync("BeatSaverVoting.Icons.Favorite.png");
+            favoriteUpvoteIcon = await BeatSaberMarkupLanguage.Utilities.LoadSpriteFromAssemblyAsync("BeatSaverVoting.Icons.FavoriteUpvote.png");
+            favoriteDownvoteIcon = await BeatSaberMarkupLanguage.Utilities.LoadSpriteFromAssemblyAsync("BeatSaverVoting.Icons.FavoriteDownvote.png");
+            upvoteIcon = await BeatSaberMarkupLanguage.Utilities.LoadSpriteFromAssemblyAsync("BeatSaverVoting.Icons.Upvote.png");
+            downvoteIcon = await BeatSaberMarkupLanguage.Utilities.LoadSpriteFromAssemblyAsync("BeatSaverVoting.Icons.Downvote.png");
 
             _harmony = new Harmony("com.kyle1413.BeatSaber.BeatSaverVoting");
             _harmony.PatchAll(Assembly.GetExecutingAssembly());
@@ -91,7 +92,7 @@ namespace BeatSaverVoting
 
         private static void BSEvents_gameSceneLoaded()
         {
-            UI.VotingUI.instance.lastSong = BS_Utils.Plugin.LevelData.GameplayCoreSceneSetupData?.difficultyBeatmap.level;
+            UI.VotingUI.instance.lastSong = BS_Utils.Plugin.LevelData.GameplayCoreSceneSetupData.beatmapLevel;
         }
 
         private static void BSEvents_menuSceneLoadedFresh(ScenesTransitionSetupDataSO data)
