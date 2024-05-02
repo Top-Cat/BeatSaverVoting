@@ -9,6 +9,7 @@ using TMPro;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using BeatSaberMarkupLanguage.Util;
 using UnityEngine.Networking;
@@ -17,7 +18,6 @@ using HMUI;
 using IPA.Utilities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Steamworks;
 using UnityEngine.UI;
 using UnityEngine.XR;
 
@@ -41,8 +41,9 @@ namespace BeatSaverVoting.UI
             public string hash;
         }
 
-        internal IBeatmapLevel lastSong;
+        internal BeatmapLevel lastSong;
         private Song _lastBeatSaverSong;
+        private IPlatformUserModel _userModel;
         private readonly string _userAgent = $"BeatSaverVoting/{Assembly.GetExecutingAssembly().GetName().Version}";
         [UIComponent("voteTitle")]
         public TextMeshProUGUI voteTitle;
@@ -81,6 +82,13 @@ namespace BeatSaverVoting.UI
             var resultsView = Resources.FindObjectsOfTypeAll<ResultsViewController>().FirstOrDefault();
 
             if (!resultsView) return;
+            
+            var platformLeaderboardsModel = Resources.FindObjectsOfTypeAll<PlatformLeaderboardsModel>().FirstOrDefault();
+            
+            if (!platformLeaderboardsModel) return;
+
+            _userModel = platformLeaderboardsModel._platformUserModel;
+            
             BSMLParser.instance.Parse(BeatSaberMarkupLanguage.Utilities.GetResourceContent(Assembly.GetExecutingAssembly(), "BeatSaverVoting.UI.votingUI.bsml"), resultsView.gameObject, this);
             resultsView.didActivateEvent += ResultsView_didActivateEvent;
             SetColors();
@@ -147,7 +155,7 @@ namespace BeatSaverVoting.UI
 
         private void GetVotesForMap()
         {
-            var isCustomLevel = lastSong is CustomPreviewBeatmapLevel;
+            var isCustomLevel = lastSong.levelID.StartsWith("custom_level_");
             downButton.gameObject.SetActive(isCustomLevel);
             upButton.gameObject.SetActive(isCustomLevel);
             voteTitle.gameObject.SetActive(isCustomLevel);
@@ -196,11 +204,11 @@ namespace BeatSaverVoting.UI
             }
         }
 
-        private IEnumerator GetRatingForSong(IBeatmapLevel level)
+        private IEnumerator GetRatingForSong(BeatmapLevel level)
         {
-            if (!(level is CustomPreviewBeatmapLevel cpblLevel)) yield break;
+            if (!level.levelID.StartsWith("custom_level_")) yield break;
 
-            var cd = new CoroutineWithData(voteTitle, GetSongInfo(SongCore.Utilities.Hashing.GetCustomLevelHash(cpblLevel)));
+            var cd = new CoroutineWithData(voteTitle, GetSongInfo(SongCore.Utilities.Hashing.GetCustomLevelHash(level)));
             yield return cd.Coroutine;
 
             try
@@ -220,8 +228,8 @@ namespace BeatSaverVoting.UI
                 UpInteractable = canVote;
                 DownInteractable = canVote;
 
-                if (!(lastSong is CustomPreviewBeatmapLevel cpblLastSong)) yield break;
-                var lastLevelHash = SongCore.Utilities.Hashing.GetCustomLevelHash(cpblLastSong).ToLower();
+                if (!lastSong.levelID.StartsWith("custom_level_")) yield break;
+                var lastLevelHash = SongCore.Utilities.Hashing.GetCustomLevelHash(lastSong).ToLower();
 
                 if (!Plugin.votedSongs.TryGetValue(lastLevelHash, out var voteInfo)) yield break;
 
@@ -271,16 +279,7 @@ namespace BeatSaverVoting.UI
         {
             try
             {
-                var flag1 = File.Exists(Path.Combine(UnityGame.InstallPath, "Beat Saber_Data\\Plugins\\x86_64\\steam_api64.dll"));
-                if (XRSettings.loadedDeviceName.IndexOf("oculus", StringComparison.OrdinalIgnoreCase) >= 0 || !flag1)
-                {
-                    voteTitle.StartCoroutine(VoteWithOculusID(hash, upvote, currentVoteCount, callback));
-                }
-                else if (XRSettings.loadedDeviceName.IndexOf("openxr", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                          Environment.CommandLine.ToLower().Contains("-vrmode oculus") || Environment.CommandLine.ToLower().Contains("fpfc"))
-                {
-                    voteTitle.StartCoroutine(VoteWithSteamID(hash, upvote, currentVoteCount, callback));
-                }
+                voteTitle.StartCoroutine(VoteWithUserInfo(hash, upvote, currentVoteCount, callback));
             }
             catch(Exception ex)
             {
@@ -289,43 +288,31 @@ namespace BeatSaverVoting.UI
 
         }
 
-        private IEnumerator VoteWithOculusID(string hash, bool upvote, int currentVoteCount, VoteCallback callback)
+        private IEnumerator VoteWithUserInfo(string hash, bool upvote, int currentVoteCount, VoteCallback callback)
         {
             UpdateView("Voting...");
 
             var task = Task.Run(async () =>
             {
-                var a = await OculusHelper.Instance.GetUserId();
-                var b = await OculusHelper.Instance.GetToken();
+                var a = await _userModel.GetUserInfo(new CancellationToken());
+                var b = await _userModel.GetUserAuthToken();
 
                 return (a, b);
             });
 
             yield return new WaitUntil(() => task.IsCompleted);
-            var (oculusId, nonce) = task.Result;
-
-            yield return PerformVote(hash, new Payload { auth = new Auth {oculusId = oculusId.ToString(), proof = nonce}, direction = upvote, hash = hash}, currentVoteCount, callback);
-        }
-
-        private IEnumerator VoteWithSteamID(string hash, bool upvote, int currentVoteCount, VoteCallback callback)
-        {
-            UpdateView("Voting...");
-
-            var steamId = SteamUser.GetSteamID();
-
-            var task = Task.Run(async () => await SteamHelper.Instance.GetToken());
-            yield return new WaitUntil(() => task.IsCompleted);
-            var authTicketHexString = task.Result;
-
-            if (authTicketHexString == null)
+            var (userInfo, authData) = task.Result;
+            var userId = userInfo.platformUserId;
+            var authToken = authData.token;
+            
+            if (userInfo.platform == UserInfo.Platform.Steam)
             {
-                UpdateView("Auth\nfailed");
-
-                callback?.Invoke(hash, false, false, -1);
-                yield break;
+                yield return PerformVote(hash, new Payload {auth = new Auth {steamId = userId, proof = authToken}, direction = upvote, hash = hash}, currentVoteCount, callback);
             }
-
-            yield return PerformVote(hash, new Payload {auth = new Auth {steamId = steamId.m_SteamID.ToString(), proof = authTicketHexString}, direction = upvote, hash = hash}, currentVoteCount, callback);
+            else if (userInfo.platform == UserInfo.Platform.Oculus)
+            {
+                yield return PerformVote(hash, new Payload { auth = new Auth {oculusId = userId, proof = authToken}, direction = upvote, hash = hash}, currentVoteCount, callback);
+            }
         }
 
         private readonly Dictionary<long, string> _errorMessages = new Dictionary<long, string>
