@@ -40,7 +40,7 @@ namespace BeatSaverVoting
 
         public static void VoteForSong(string hash, VoteType type, VoteCallback callback)
         {
-            UI.VotingUI.instance.VoteForSong(hash, type == VoteType.Upvote, callback);
+            UI.VotingUI.Instance.VoteForSong(hash, type == VoteType.Upvote, callback);
         }
 
         public static VoteType? CurrentVoteStatus(string hash)
@@ -92,12 +92,12 @@ namespace BeatSaverVoting
 
         private static void BSEvents_gameSceneLoaded()
         {
-            UI.VotingUI.instance.lastSong = BS_Utils.Plugin.LevelData.GameplayCoreSceneSetupData?.beatmapLevel;
+            UI.VotingUI.Instance.lastSong = BS_Utils.Plugin.LevelData.GameplayCoreSceneSetupData?.beatmapLevel;
         }
 
         private static void BSEvents_menuSceneLoadedFresh(ScenesTransitionSetupDataSO data)
         {
-            UI.VotingUI.instance.Setup();
+            UI.VotingUI.Instance.Setup();
             tableView = Resources.FindObjectsOfTypeAll<LevelCollectionTableView>().FirstOrDefault()
                 .GetField<HMUI.TableView, LevelCollectionTableView>("_tableView");
         }

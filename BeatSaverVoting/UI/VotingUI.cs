@@ -20,10 +20,13 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEngine.UI;
 using UnityEngine.XR;
+using System.ComponentModel;
+
+using Component = UnityEngine.Component;
 
 namespace BeatSaverVoting.UI
 {
-    public class VotingUI : NotifiableSingleton<VotingUI>
+    public class VotingUI : INotifyPropertyChanged
     {
 
         [Serializable]
@@ -62,7 +65,7 @@ namespace BeatSaverVoting.UI
             set
             {
                 _upInteractable = value;
-                NotifyPropertyChanged();
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null));
             }
         }
         private bool _downInteractable = true;
@@ -73,9 +76,13 @@ namespace BeatSaverVoting.UI
             set
             {
                 _downInteractable = value;
-                NotifyPropertyChanged();
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null));
             }
         }
+
+        public static VotingUI Instance { get; private set; } = new VotingUI();
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         internal void Setup()
         {
@@ -89,7 +96,7 @@ namespace BeatSaverVoting.UI
 
             _userModel = platformLeaderboardsModel._platformUserModel;
             
-            BSMLParser.instance.Parse(BeatSaberMarkupLanguage.Utilities.GetResourceContent(Assembly.GetExecutingAssembly(), "BeatSaverVoting.UI.votingUI.bsml"), resultsView.gameObject, this);
+            BSMLParser.Instance.Parse(BeatSaberMarkupLanguage.Utilities.GetResourceContent(Assembly.GetExecutingAssembly(), "BeatSaverVoting.UI.votingUI.bsml"), resultsView.gameObject, this);
             resultsView.didActivateEvent += ResultsView_didActivateEvent;
             SetColors();
         }
