@@ -88,7 +88,7 @@ namespace BeatSaverVoting.UI
             if (!platformLeaderboardsModel) return;
 
             _userModel = platformLeaderboardsModel._platformUserModel;
-            
+
             BSMLParser.Instance.Parse(BeatSaberMarkupLanguage.Utilities.GetResourceContent(Assembly.GetExecutingAssembly(), "BeatSaverVoting.UI.votingUI.bsml"), resultsView.gameObject, this);
             resultsView.didActivateEvent += ResultsView_didActivateEvent;
             SetColors();
@@ -208,7 +208,7 @@ namespace BeatSaverVoting.UI
         {
             if (!level.levelID.StartsWith("custom_level_")) yield break;
 
-            var cd = new CoroutineWithData(voteTitle, GetSongInfo(SongCore.Utilities.Hashing.GetCustomLevelHash(level)));
+            var cd = new CoroutineWithData(voteTitle, GetSongInfo(SongCore.Collections.GetCustomLevelHash(level.levelID)));
             yield return cd.Coroutine;
 
             try
@@ -229,7 +229,7 @@ namespace BeatSaverVoting.UI
                 DownInteractable = canVote;
 
                 if (!lastSong.levelID.StartsWith("custom_level_")) yield break;
-                var lastLevelHash = SongCore.Utilities.Hashing.GetCustomLevelHash(lastSong).ToLower();
+                var lastLevelHash = SongCore.Collections.GetCustomLevelHash(lastSong.levelID).ToLower();
 
                 if (!Plugin.votedSongs.TryGetValue(lastLevelHash, out var voteInfo)) yield break;
 
@@ -304,7 +304,7 @@ namespace BeatSaverVoting.UI
             var (userInfo, authData) = task.Result;
             var userId = userInfo.platformUserId;
             var authToken = authData.token;
-            
+
             if (userInfo.platform == UserInfo.Platform.Steam)
             {
                 yield return PerformVote(hash, new Payload {auth = new Auth {steamId = userId, proof = authToken}, direction = upvote, hash = hash}, currentVoteCount, callback);
@@ -325,7 +325,6 @@ namespace BeatSaverVoting.UI
 
         private IEnumerator PerformVote(string hash, Payload payload, int currentVoteCount, VoteCallback callback)
         {
-            Logging.log.Debug($"Voting BM...");
             var json = JsonConvert.SerializeObject(payload);
             var voteWWW = UnityWebRequest.Post($"{Plugin.BeatsaverURL}/vote", json);
 
